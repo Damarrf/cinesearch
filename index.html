@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineSearch — Pencarian Film</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f0f0f;
+      --surface:   #1a1a1a;
+      --surface2:  #222222;
+      --border:    #2a2a2a;
+      --accent:    #e8c97e;
+      --accent-dim:#b89a50;
+      --text:      #f0ede8;
+      --muted:     #7a7672;
+      --danger:    #c0392b;
+      --radius:    10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 48px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 72px 24px 48px;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent);
+    }
+    .hero p {
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 300;
+    }
+
+    /* ── SEARCH ── */
+    .search-wrap {
+      max-width: 620px;
+      margin: 36px auto 0;
+      padding: 0 24px;
+    }
+    .search-box {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .search-box:focus-within { border-color: var(--accent); }
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 16px 20px;
+      font-size: 1rem;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+    }
+    .search-box input::placeholder { color: var(--muted); }
+    .search-box button {
+      background: var(--accent);
+      border: none;
+      padding: 0 28px;
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      color: #0f0f0f;
+      letter-spacing: .5px;
+      transition: background .2s;
+    }
+    .search-box button:hover { background: var(--accent-dim); }
+
+    /* filter row */
+    .filter-row {
+      max-width: 620px;
+      margin: 12px auto 0;
+      padding: 0 24px;
+      display: flex;
+      gap: 10px;
+    }
+    .filter-row select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 8px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: .85rem;
+      cursor: pointer;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .filter-row select:focus { border-color: var(--accent); }
+
+    /* ── MAIN ── */
+    main { max-width: 1200px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    /* state messages */
+    .state-msg {
+      text-align: center;
+      padding: 80px 0;
+      color: var(--muted);
+    }
+    .state-msg .icon { font-size: 3rem; margin-bottom: 16px; }
+    .state-msg p { font-size: 1rem; }
+    .state-msg.error p { color: #e07070; }
+
+    /* skeleton */
+    .skeleton-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 24px;
+    }
+    .skeleton-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .skeleton-img { height: 280px; background: var(--surface2); }
+    .skeleton-body { padding: 16px; }
+    .skeleton-line {
+      height: 12px;
+      border-radius: 4px;
+      background: var(--surface2);
+      margin-bottom: 8px;
+    }
+    .skeleton-line.short { width: 50%; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+    /* grid */
+    .results-meta {
+      font-size: .85rem;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .results-meta strong { color: var(--accent); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 24px;
+    }
+
+    /* card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform .22s, border-color .22s, box-shadow .22s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 32px rgba(0,0,0,.5);
+    }
+    .card-img {
+      width: 100%;
+      aspect-ratio: 2/3;
+      object-fit: cover;
+      display: block;
+      background: var(--surface2);
+    }
+    .card-img.no-poster {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      color: var(--muted);
+    }
+    .card-body { padding: 14px 16px; }
+    .card-title {
+      font-size: .95rem;
+      font-weight: 500;
+      line-height: 1.3;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-meta {
+      font-size: .78rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    .badge {
+      font-size: .68rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--surface2);
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
+
+    /* pagination */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 48px;
+    }
+    .pagination button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 22px;
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: .875rem;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .pagination button:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: var(--surface2);
+    }
+    .pagination button:disabled { opacity: .3; cursor: not-allowed; }
+    .pagination span { font-size: .875rem; color: var(--muted); }
+
+    /* ── MODAL ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+    }
+    .overlay.active { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-width: 780px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(16px);
+      transition: transform .25s;
+    }
+    .overlay.active .modal { transform: translateY(0); }
+
+    .modal-close {
+      position: sticky;
+      top: 0;
+      display: flex;
+      justify-content: flex-end;
+      padding: 16px 20px 0;
+      background: var(--surface);
+      z-index: 1;
+    }
+    .modal-close button {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .2s;
+    }
+    .modal-close button:hover { color: var(--text); }
+
+    .modal-body {
+      display: flex;
+      gap: 28px;
+      padding: 16px 28px 32px;
+    }
+    .modal-poster {
+      flex-shrink: 0;
+      width: 200px;
+    }
+    .modal-poster img {
+      width: 100%;
+      border-radius: 8px;
+      display: block;
+    }
+    .modal-poster .no-poster-lg {
+      width: 100%; height: 280px;
+      background: var(--surface2);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem; color: var(--muted);
+    }
+    .modal-info h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+    .modal-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tag {
+      font-size: .75rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .tag.gold { color: var(--accent); border-color: var(--accent-dim); }
+
+    .modal-plot {
+      font-size: .9rem;
+      color: #b0ada8;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .modal-field label {
+      display: block;
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .modal-field p {
+      font-size: .85rem;
+      color: var(--text);
+    }
+
+    /* rating stars */
+    .rating {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .stars { color: var(--accent); font-size: 1rem; }
+    .rating-num { font-size: .9rem; color: var(--muted); }
+
+    /* loading spinner in modal */
+    .modal-loading {
+      padding: 80px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* responsive */
+    @media (max-width: 600px) {
+      header { padding: 20px 20px; }
+      .modal-body { flex-direction: column; }
+      .modal-poster { width: 100%; max-width: 200px; }
+      .modal-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Cine<span>Search</span></div>
+  <div style="font-size:.8rem;color:var(--muted);">Powered by OMDb API</div>
+</header>
+
+<div class="hero">
+  <h1>Temukan <em>film</em> favorit<br>kamu di sini</h1>
+  <p>Cari berdasarkan judul — dapatkan poster, rating, sinopsis, dan lebih banyak lagi.</p>
+</div>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Cari judul film, misal: Avengers..." autocomplete="off" />
+    <button id="searchBtn">Cari</button>
+  </div>
+</div>
+<div class="filter-row">
+  <select id="typeFilter">
+    <option value="">Semua Tipe</option>
+    <option value="movie">Film</option>
+    <option value="series">Serial</option>
+    <option value="episode">Episode</option>
+  </select>
+  <select id="yearFilter">
+    <option value="">Semua Tahun</option>
+  </select>
+</div>
+
+<main id="main">
+  <div class="state-msg">
+    <div class="icon">🎬</div>
+    <p>Ketik judul film di atas dan tekan Cari.</p>
+  </div>
+</main>
+
+<!-- Modal Detail -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <div class="modal-close"><button id="closeModal" title="Tutup">✕</button></div>
+    <div class="modal-body" id="modalContent">
+      <div class="modal-loading"><div class="spinner"></div><p>Memuat detail…</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── CONFIG ──
+  // OMDb free key — 1000 req/day, unlimited for educational use
+  const API_KEY = 'trilogy';          // public demo key provided by OMDb for demos
+  const BASE    = 'https://www.omdbapi.com/';
+  let currentPage = 1;
+  let currentQuery = '';
+  let currentType  = '';
+  let currentYear  = '';
+  let totalResults = 0;
+
+  // ── YEAR FILTER ──
+  const yearSel = document.getElementById('yearFilter');
+  const thisYear = new Date().getFullYear();
+  for (let y = thisYear; y >= 1950; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    yearSel.appendChild(o);
+  }
+
+  // ── ELEMENTS ──
+  const input      = document.getElementById('searchInput');
+  const searchBtn  = document.getElementById('searchBtn');
+  const typeFilter = document.getElementById('typeFilter');
+  const mainEl     = document.getElementById('main');
+  const overlay    = document.getElementById('overlay');
+  const closeModal = document.getElementById('closeModal');
+  const modalContent = document.getElementById('modalContent');
+
+  // ── EVENTS ──
+  searchBtn.addEventListener('click', doSearch);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+  typeFilter.addEventListener('change', () => { if (currentQuery) doSearch(); });
+  yearSel.addEventListener('change', () => { if (currentQuery) doSearch(); });
+  closeModal.addEventListener('click', closeOverlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverlay(); });
+
+  function doSearch(page = 1) {
+    const q = input.value.trim();
+    if (!q) { input.focus(); return; }
+    currentQuery = q;
+    currentPage  = page;
+    currentType  = typeFilter.value;
+    currentYear  = yearSel.value;
+    fetchMovies();
+  }
+
+  // ── FETCH LIST ──
+  async function fetchMovies() {
+    mainEl.innerHTML = skeletonGrid();
+    const params = new URLSearchParams({
+      apikey: API_KEY,
+      s: currentQuery,
+      page: currentPage,
+      ...(currentType && { type: currentType }),
+      ...(currentYear && { y: currentYear }),
+    });
+
+    try {
+      const res  = await fetch(`${BASE}?${params}`);
+      const data = await res.json();
+
+      if (data.Response === 'False') {
+        mainEl.innerHTML = `<div class="state-msg error"><div class="icon">🔍</div><p>${data.Error}</p></div>`;
+        return;
+      }
+
+      totalResults = parseInt(data.totalResults) || 0;
+      renderResults(data.Search, currentPage, totalResults);
+    } catch {
+      mainEl.innerHTML = `<div class="state-msg error"><div class="icon">⚠️</div><p>Terjadi kesalahan jaringan. Coba lagi.</p></div>`;
+    }
+  }
+
+  // ── RENDER CARDS ──
+  function renderResults(movies, page, total) {
+    const totalPages = Math.ceil(total / 10);
+    const start = (page - 1) * 10 + 1;
+    const end   = Math.min(page * 10, total);
+
+    let html = `<p class="results-meta">Menampilkan <strong>${start}–${end}</strong> dari <strong>${total.toLocaleString()}</strong> hasil untuk "<strong>${escHtml(currentQuery)}</strong>"</p>`;
+    html += `<div class="grid">`;
+
+    for (const m of movies) {
+      const poster = m.Poster && m.Poster !== 'N/A'
+        ? `<img class="card-img" src="${escHtml(m.Poster)}" alt="${escHtml(m.Title)}" loading="lazy" />`
+        : `<div class="card-img no-poster">🎬</div>`;
+
+      html += `
+        <div class="card" data-imdbid="${m.imdbID}" tabindex="0" role="button" aria-label="${escHtml(m.Title)}">
+          ${poster}
+          <div class="card-body">
+            <div class="card-title">${escHtml(m.Title)}</div>
+            <div class="card-meta">
+              <span>${m.Year}</span>
+              <span class="badge">${typeLabel(m.Type)}</span>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    html += `</div>`;
+
+    // Pagination
+    if (totalPages > 1) {
+      html += `<div class="pagination">
+        <button id="prevBtn" ${page <= 1 ? 'disabled' : ''}>← Sebelumnya</button>
+        <span>Halaman ${page} / ${totalPages}</span>
+        <button id="nextBtn" ${page >= totalPages ? 'disabled' : ''}>Berikutnya →</button>
+      </div>`;
+    }
+
+    mainEl.innerHTML = html;
+
+    // Card click
+    mainEl.querySelectorAll('.card').forEach(card => {
+      const open = () => openDetail(card.dataset.imdbid);
+      card.addEventListener('click', open);
+      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(); });
+    });
+
+    // Pagination
+    document.getElementById('prevBtn')?.addEventListener('click', () => doSearch(page - 1));
+    document.getElementById('nextBtn')?.addEventListener('click', () => doSearch(page + 1));
+  }
+
+  // ── MODAL DETAIL ──
+  async function openDetail(imdbID) {
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    modalContent.innerHTML = `<div class="modal-loading"><div class="spinner"></div><p>Memuat detail…</p></div>`;
+
+    try {
+      const res  = await fetch(`${BASE}?apikey=${API_KEY}&i=${imdbID}&plot=full`);
+      const d    = await res.json();
+
+      if (d.Response === 'False') {
+        modalContent.innerHTML = `<p style="padding:40px;color:var(--muted)">Gagal memuat detail.</p>`;
+        return;
+      }
+
+      const poster = d.Poster && d.Poster !== 'N/A'
+        ? `<img src="${escHtml(d.Poster)}" alt="${escHtml(d.Title)}" />`
+        : `<div class="no-poster-lg">🎬</div>`;
+
+      const imdbRating = d.imdbRating && d.imdbRating !== 'N/A' ? d.imdbRating : null;
+      const stars = imdbRating ? starsHtml(parseFloat(imdbRating)) : '';
+
+      const tags = [
+        d.Year !== 'N/A' ? d.Year : null,
+        d.Runtime !== 'N/A' ? d.Runtime : null,
+        d.Rated !== 'N/A' ? d.Rated : null,
+      ].filter(Boolean);
+
+      modalContent.innerHTML = `
+        <div class="modal-poster">${poster}</div>
+        <div class="modal-info">
+          <h2>${escHtml(d.Title)}</h2>
+          <div class="modal-tags">
+            ${tags.map(t => `<span class="tag">${escHtml(t)}</span>`).join('')}
+            ${d.Genre !== 'N/A' ? d.Genre.split(',').map(g => `<span class="tag">${escHtml(g.trim())}</span>`).join('') : ''}
+          </div>
+          ${imdbRating ? `<div class="rating">${stars}<span class="rating-num">${imdbRating}/10 IMDb</span></div>` : ''}
+          <p class="modal-plot">${escHtml(d.Plot !== 'N/A' ? d.Plot : 'Sinopsis tidak tersedia.')}</p>
+          <div class="modal-grid">
+            ${field('Sutradara', d.Director)}
+            ${field('Pemain', d.Actors)}
+            ${field('Bahasa', d.Language)}
+            ${field('Negara', d.Country)}
+            ${field('Tanggal Rilis', d.Released)}
+            ${field('Penghargaan', d.Awards)}
+          </div>
+        </div>`;
+    } catch {
+      modalContent.innerHTML = `<p style="padding:40px;color:var(--muted)">Terjadi kesalahan. Coba lagi.</p>`;
+    }
+  }
+
+  function closeOverlay() {
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  // ── HELPERS ──
+  function field(label, value) {
+    if (!value || value === 'N/A') return '';
+    return `<div class="modal-field"><label>${label}</label><p>${escHtml(value)}</p></div>`;
+  }
+
+  function starsHtml(rating) {
+    const filled = Math.round(rating / 2);
+    return `<span class="stars">${'★'.repeat(filled)}${'☆'.repeat(5 - filled)}</span>`;
+  }
+
+  function typeLabel(t) {
+    return t === 'movie' ? 'Film' : t === 'series' ? 'Serial' : t === 'episode' ? 'Episode' : t;
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function skeletonGrid() {
+    return `<div class="skeleton-grid">` +
+      Array(8).fill(0).map(() => `
+        <div class="skeleton-card">
+          <div class="skeleton-img"></div>
+          <div class="skeleton-body">
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line short"></div>
+          </div>
+        </div>`).join('') +
+    `</div>`;
+  }
+</script>
+</body>
+</html>

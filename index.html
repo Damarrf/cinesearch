@@ -30,7 +30,6 @@
       min-height: 100vh;
     }
 
-    /* ── HEADER ── */
     header {
       display: flex;
       align-items: center;
@@ -46,7 +45,6 @@
     }
     .logo span { color: var(--text); }
 
-    /* ── HERO ── */
     .hero {
       text-align: center;
       padding: 72px 24px 48px;
@@ -67,7 +65,6 @@
       font-weight: 300;
     }
 
-    /* ── SEARCH ── */
     .search-wrap {
       max-width: 620px;
       margin: 36px auto 0;
@@ -107,7 +104,6 @@
     }
     .search-box button:hover { background: var(--accent-dim); }
 
-    /* filter row */
     .filter-row {
       max-width: 620px;
       margin: 12px auto 0;
@@ -129,10 +125,8 @@
     }
     .filter-row select:focus { border-color: var(--accent); }
 
-    /* ── MAIN ── */
     main { max-width: 1200px; margin: 0 auto; padding: 48px 24px 80px; }
 
-    /* state messages */
     .state-msg {
       text-align: center;
       padding: 80px 0;
@@ -142,7 +136,6 @@
     .state-msg p { font-size: 1rem; }
     .state-msg.error p { color: #e07070; }
 
-    /* skeleton */
     .skeleton-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -165,7 +158,6 @@
     .skeleton-line.short { width: 50%; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 
-    /* grid */
     .results-meta {
       font-size: .85rem;
       color: var(--muted);
@@ -179,7 +171,6 @@
       gap: 24px;
     }
 
-    /* card */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -234,7 +225,6 @@
       border: 1px solid var(--border);
     }
 
-    /* pagination */
     .pagination {
       display: flex;
       align-items: center;
@@ -260,7 +250,6 @@
     .pagination button:disabled { opacity: .3; cursor: not-allowed; }
     .pagination span { font-size: .875rem; color: var(--muted); }
 
-    /* ── MODAL ── */
     .overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,.85);
@@ -380,7 +369,6 @@
       color: var(--text);
     }
 
-    /* rating stars */
     .rating {
       display: flex;
       align-items: center;
@@ -390,7 +378,6 @@
     .stars { color: var(--accent); font-size: 1rem; }
     .rating-num { font-size: .9rem; color: var(--muted); }
 
-    /* loading spinner in modal */
     .modal-loading {
       padding: 80px;
       text-align: center;
@@ -406,7 +393,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* responsive */
     @media (max-width: 600px) {
       header { padding: 20px 20px; }
       .modal-body { flex-direction: column; }
@@ -452,7 +438,6 @@
   </div>
 </main>
 
-<!-- Modal Detail -->
 <div class="overlay" id="overlay">
   <div class="modal" id="modal">
     <div class="modal-close"><button id="closeModal" title="Tutup">✕</button></div>
@@ -463,9 +448,7 @@
 </div>
 
 <script>
-  // ── CONFIG ──
-  // OMDb free key — 1000 req/day, unlimited for educational use
-  const API_KEY = 'trilogy';          // public demo key provided by OMDb for demos
+  const API_KEY = 'trilogy';
   const BASE    = 'https://www.omdbapi.com/';
   let currentPage = 1;
   let currentQuery = '';
@@ -473,7 +456,6 @@
   let currentYear  = '';
   let totalResults = 0;
 
-  // ── YEAR FILTER ──
   const yearSel = document.getElementById('yearFilter');
   const thisYear = new Date().getFullYear();
   for (let y = thisYear; y >= 1950; y--) {
@@ -482,7 +464,6 @@
     yearSel.appendChild(o);
   }
 
-  // ── ELEMENTS ──
   const input      = document.getElementById('searchInput');
   const searchBtn  = document.getElementById('searchBtn');
   const typeFilter = document.getElementById('typeFilter');
@@ -491,7 +472,6 @@
   const closeModal = document.getElementById('closeModal');
   const modalContent = document.getElementById('modalContent');
 
-  // ── EVENTS ──
   searchBtn.addEventListener('click', doSearch);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
   typeFilter.addEventListener('change', () => { if (currentQuery) doSearch(); });
@@ -510,7 +490,6 @@
     fetchMovies();
   }
 
-  // ── FETCH LIST ──
   async function fetchMovies() {
     mainEl.innerHTML = skeletonGrid();
     const params = new URLSearchParams({
@@ -537,7 +516,6 @@
     }
   }
 
-  // ── RENDER CARDS ──
   function renderResults(movies, page, total) {
     const totalPages = Math.ceil(total / 10);
     const start = (page - 1) * 10 + 1;
@@ -566,7 +544,6 @@
 
     html += `</div>`;
 
-    // Pagination
     if (totalPages > 1) {
       html += `<div class="pagination">
         <button id="prevBtn" ${page <= 1 ? 'disabled' : ''}>← Sebelumnya</button>
@@ -577,19 +554,16 @@
 
     mainEl.innerHTML = html;
 
-    // Card click
     mainEl.querySelectorAll('.card').forEach(card => {
       const open = () => openDetail(card.dataset.imdbid);
       card.addEventListener('click', open);
       card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(); });
     });
 
-    // Pagination
     document.getElementById('prevBtn')?.addEventListener('click', () => doSearch(page - 1));
     document.getElementById('nextBtn')?.addEventListener('click', () => doSearch(page + 1));
   }
 
-  // ── MODAL DETAIL ──
   async function openDetail(imdbID) {
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -646,7 +620,6 @@
     document.body.style.overflow = '';
   }
 
-  // ── HELPERS ──
   function field(label, value) {
     if (!value || value === 'N/A') return '';
     return `<div class="modal-field"><label>${label}</label><p>${escHtml(value)}</p></div>`;
